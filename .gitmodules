@@ -1,0 +1,3 @@
+[submodule "src/BatteryToolkit"]
+	path = src/BatteryToolkit
+	url = https://github.com/klinders/BatteryToolkit
