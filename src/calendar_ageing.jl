@@ -112,7 +112,7 @@ sys = subset_tunables(sys, [sys.cell.D_ec, sys.cell.k_sei, sys.cell.α, sys.cell
 prob = ODEProblem(sys, [sys.Iin=>-5, sys.Tin=>298.15, sys.end_soc=>0.3], (0, day*times[end]))
 
 ##
-using OrdinaryDiffEq, Sundials
+using OrdinaryDiffEq
 using SymbolicIndexingInterface
 using GLMakie
 using ColorSchemes
@@ -123,7 +123,7 @@ using OptimizationOptimJL
 using OptimizationMetaheuristics
 
 results = []
-data = matread(joinpath(@__DIR__,"Kuzhiyil/RPT_analysis_data.mat"))
+data = matread(joinpath(@__DIR__,"../data/Kuzhiyil/RPT_analysis_data.mat"))
 
 for T in temperatures
     real_data = Vector{DataFrame}()
@@ -160,7 +160,7 @@ for T in temperatures
         axislegend(ax)
         GLMakie.xlims!(0, t_end)
 
-        save(joinpath(@__DIR__,"plots",name), f)
+        save(joinpath(@__DIR__,"../plots/calendar",name), f)
     end
 
     u0_arr = [
@@ -188,7 +188,7 @@ for T in temperatures
 
     eprob = EnsembleProblem(prob, prob_func=prob_func)
 
-    sol_t = solve(eprob, trajectories=N, saveat=day .* times)
+    sol_t = solve(eprob, trajectories=N, saveat=day)
     plot(sol_t, "not_optimized_$(T).png", title="No optimization at $(T)°C")
 
     get_q = getsym(sys, sys.cell.C_cell)
@@ -223,7 +223,7 @@ for T in temperatures
                                prob_generator = eprob_func,
                                trajectories = N,
                                maxiters = 1e8,
-                               saveat = day .* times);
+                               saveat = day);
     lb = [0.2, 1e-18, 1e-24, 1e-6, 3.5]
     ub = [0.8, 1e-14, 1e-20, 1e-2, 4.5]
     
@@ -236,15 +236,20 @@ for T in temperatures
         @info "State:$state, Loss: $loss"
     end
     
-    result = solve(optprob, PSO(N=15, C1=2.0, C2=2.0, ω=0.8),  maxiters=100, use_initial=true)
+    result = solve(optprob, PSO(N=15, C1=2.0, C2=2.0, ω=0.8),  maxiters=50, use_initial=true)
 
     @show result
     push!(results, result)
+
+    open("../output/results.txt", "a") do io
+        write(io, "Calendar ageing T=", T, "degC\n")
+        write(io, result,"\n")
+    end
     
     ## Optimized
     eprob_opt = eprob_func(eprob, result.u)
     
-    sol = solve(eprob_opt, trajectories=N, saveat=week .* times)
+    sol = solve(eprob_opt, trajectories=N, saveat=day)
     
     plot(sol, "with_optimized_$(T).png", title="With optimization at $(T)°C")
 
@@ -297,6 +302,6 @@ end
 Label(f[1, 2, Top()], L"\times 10^-15", halign = :left, valign = :bottom, padding = (0, 0, 5, 0))
 Label(f[1, 3, Top()], L"\times 10^-22", halign = :left, valign = :bottom, padding = (0, 0, 5, 0))
 
-save(joinpath(@__DIR__,"plots","optimized_parameters.png"), f)
+save(joinpath(@__DIR__,"../plots/calendar","optimized_parameters.png"), f)
 
 # @show f
