@@ -4,8 +4,6 @@ using Logging, LoggingExtras
 
 global_logger(MinLevelLogger(FileLogger("output/log.txt"), Info))
 
-make_plots = false
-
 temperatures = [10, 25, 40]
 socs = [[0,30], [70,85], [85,100]]
 
@@ -45,6 +43,8 @@ using ModelingToolkitStandardLibrary.Electrical
 using BatteryToolkit
 using Setfield
 using SciMLStructures
+using DiffEqGPU
+using CUDA
 
 function abort!(mod,obs,ctx,int)
     ModelingToolkit.terminate!(int)
@@ -131,9 +131,7 @@ prob = ODEProblem(sys, [sys.Iin=>-5, sys.Tin=>298.15, sys.soc_min=>0.0, sys.soc_
 ##
 using OrdinaryDiffEq
 using SymbolicIndexingInterface
-if make_plots
-    using CairoMakie
-end
+using CairoMakie
 using ColorSchemes
 using Optimization
 using ForwardDiff
@@ -162,10 +160,6 @@ for (i_T,T) in enumerate(temperatures)
     end
 
     function plot(p::EnsembleSolution, name; title="")
-        if !make_plots 
-            return 
-        end
-
         CairoMakie.set_theme!(theme_latexfonts(), fontsize=24)
 
         f = Figure()
