@@ -114,7 +114,7 @@ prob = ODEProblem(sys, [sys.Iin=>-5, sys.Tin=>298.15, sys.end_soc=>0.3], (0, day
 ##
 using OrdinaryDiffEq
 using SymbolicIndexingInterface
-using GLMakie
+using CairoMakie
 using ColorSchemes
 using Optimization
 using ForwardDiff
@@ -136,7 +136,7 @@ for T in temperatures
     end
 
     function plot(p::EnsembleSolution, name; title="")
-        GLMakie.set_theme!(theme_latexfonts(), fontsize=24)
+        CairoMakie.set_theme!(theme_latexfonts(), fontsize=24)
 
         f = Figure()
 
@@ -151,14 +151,14 @@ for T in temperatures
         
         for i in eachindex(p)
             s = p[i]
-            GLMakie.lines!(ax, s[sys.t]/day, s[sys.cell.C_cell], label="SoC=$(socs[i])", color=colors[i])
-            GLMakie.scatter!(ax, real_data[i].t, real_data[i].q, color=colors[i])
+            CairoMakie.lines!(ax, s[sys.t]/day, s[sys.cell.C_cell], label="SoC=$(socs[i])", color=colors[i])
+            CairoMakie.scatter!(ax, real_data[i].t, real_data[i].q, color=colors[i])
             # fake the data to 0 error
             # data[i] = s[sys.cell.C_cell]
         end
 
         axislegend(ax)
-        GLMakie.xlims!(0, t_end)
+        CairoMakie.xlims!(0, t_end)
 
         save(joinpath(@__DIR__,"../plots/calendar",name), f)
     end
@@ -280,7 +280,7 @@ end
 
 parameters = ["α", "k_sei", "D_ec", "i₀", "U_diss"]
 colors = get(ColorSchemes.matter, range(0,1, length=2))
-GLMakie.set_theme!(theme_latexfonts(), fontsize=24)
+CairoMakie.set_theme!(theme_latexfonts(), fontsize=24)
 
 f = Figure(size=(1600, 400))
 
@@ -288,15 +288,15 @@ for i in eachindex(parameters)
     ax = Axis(f[1,i], title="$(parameters[i])", xlabel="Temperature [°C]", ylabel="")
     # ax.ytickformat = "{:.2f}"
     
-    # GLMakie.tight_ticklabel_spacing!(ax)
+    # CairoMakie.tight_ticklabel_spacing!(ax)
     y = [results[j][i] for j in 1:length(temperatures)]
-    GLMakie.scatter!(ax, temperatures, y)
+    CairoMakie.scatter!(ax, temperatures, y)
     # Sample data
     X = hcat(temperatures, ones(length(y)))
     coefs = X \ y
     a, b = coefs[1], coefs[2]
     
-    GLMakie.lines!(ax, temperatures, a .* temperatures.+b, linestyle=:dash)
+    CairoMakie.lines!(ax, temperatures, a .* temperatures.+b, linestyle=:dash)
 end
 
 Label(f[1, 2, Top()], L"\times 10^-15", halign = :left, valign = :bottom, padding = (0, 0, 5, 0))

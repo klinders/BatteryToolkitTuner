@@ -116,7 +116,7 @@ end
 
 
 ## Plot los
-using GLMakie
+using CairoMakie
 using ColorSchemes
 
 f = Figure()
@@ -131,10 +131,10 @@ colors = get(ColorSchemes.matter, range(0,1, length=3))
 
 for (i,sol) in enumerate(sols)
     # val = minimum.(sol[sys.cell.el.cₑ])
-    GLMakie.lines!(ax, sol[sys.t]/24/3600, sol[sys.cell.ne.c_surf], label="Exp $(i)", color=colors[i])
-    # GLMakie.scatter!(ax, real_data[p].t, real_data[p].q/1000, label="Exp $(i)", color=colors[i])
+    CairoMakie.lines!(ax, sol[sys.t]/24/3600, sol[sys.cell.ne.c_surf], label="Exp $(i)", color=colors[i])
+    # CairoMakie.scatter!(ax, real_data[p].t, real_data[p].q/1000, label="Exp $(i)", color=colors[i])
 end
 
 axislegend(ax)
-# GLMakie.xlims!(0, t_end)
+# CairoMakie.xlims!(0, t_end)
 @show f

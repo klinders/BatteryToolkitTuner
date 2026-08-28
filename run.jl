@@ -1,5 +1,5 @@
 
-using GLMakie
+using CairoMakie
 using ColorSchemes
 using CSV
 using MAT
@@ -106,7 +106,7 @@ sols = test_all_cases(sys, cases, QNDF(); parameters=parameters, period=(0, 24*3
 real_data = load_datasets()[[10,13,16]]
 
 # ## Plot
-# GLMakie.set_theme!(theme_latexfonts(), fontsize=24)
+# CairoMakie.set_theme!(theme_latexfonts(), fontsize=24)
 
 # for plt in plots
     
@@ -121,12 +121,12 @@ real_data = load_datasets()[[10,13,16]]
 #     colors = get(ColorSchemes.matter, range(0,1, length=length(plt.datasets)))
     
 #     for (i,p) in enumerate(plt.datasets)
-#         GLMakie.lines!(ax, sols[p][sys.t]/24/3600, sols[p][sys.cell.C_cell], label=plt.labels[i], color=colors[i])
-#         GLMakie.scatter!(ax, real_data[p].t, real_data[p].q/1000, color=colors[i])
+#         CairoMakie.lines!(ax, sols[p][sys.t]/24/3600, sols[p][sys.cell.C_cell], label=plt.labels[i], color=colors[i])
+#         CairoMakie.scatter!(ax, real_data[p].t, real_data[p].q/1000, color=colors[i])
 #     end
 
 #     axislegend(ax)
-#     GLMakie.xlims!(0, 365)
+#     CairoMakie.xlims!(0, 365)
 
 #     save(joinpath(@__DIR__,"plots",plt.filename), f)
 # end

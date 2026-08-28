@@ -129,7 +129,7 @@ prob = ODEProblem(sys, [sys.Iin=>-5, sys.Tin=>298.15, sys.soc_min=>0.0, sys.soc_
 ##
 using OrdinaryDiffEq
 using SymbolicIndexingInterface
-using GLMakie
+using CairoMakie
 using ColorSchemes
 using Optimization
 using ForwardDiff
@@ -158,7 +158,7 @@ for (i_T,T) in enumerate(temperatures)
     end
 
     function plot(p::EnsembleSolution, name; title="")
-        GLMakie.set_theme!(theme_latexfonts(), fontsize=24)
+        CairoMakie.set_theme!(theme_latexfonts(), fontsize=24)
 
         f = Figure()
 
@@ -172,14 +172,14 @@ for (i_T,T) in enumerate(temperatures)
         
         for i in eachindex(p)
             s = p[i]
-            GLMakie.lines!(ax, s[sys.t]/day, s[sys.cell.C_cell], label="SoC=$(socs[i][1])-$(socs[i][2])", color=colors[i])
-            GLMakie.scatter!(ax, real_data[i].t, real_data[i].q/1000, color=colors[i])
+            CairoMakie.lines!(ax, s[sys.t]/day, s[sys.cell.C_cell], label="SoC=$(socs[i][1])-$(socs[i][2])", color=colors[i])
+            CairoMakie.scatter!(ax, real_data[i].t, real_data[i].q/1000, color=colors[i])
             # fake the data to 0 error
             # data[i] = s[sys.cell.C_cell]
         end
 
         axislegend(ax)
-        GLMakie.xlims!(0, t_end)
+        CairoMakie.xlims!(0, t_end)
 
         save(joinpath(@__DIR__,"../plots/cyclic",name), f)
     end
