@@ -149,7 +149,10 @@ calendar_results = [
 ]
 results = []
 
-for (i_T,T) in enumerate(temperatures)
+using Base.Threads
+
+@threads for i_T in eachindex(temperatures)
+    T = temperatures[i_T]
     @info "Solving T=$(T)"
 
     real_data = Vector{DataFrame}()
