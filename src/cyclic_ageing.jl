@@ -255,6 +255,7 @@ using Base.Threads
 
     function cost(solution)
         err = 0.0
+        N_points = 0
         
         for i in eachindex(solution)
             if solution[i].retcode != SciMLBase.ReturnCode.Success
@@ -271,13 +272,18 @@ using Base.Threads
                 if d.t > t_end
                     continue
                 end
-                index = round(Int, d.t + 6)
-                err += abs2.(q[index] .- d.q./1000) + abs2.(lam_p[index] .- d.lam_p) + abs2.(lam_n[index] .- d.lam_n) + abs2.(lli[index] .- d.lli)
+                index = findfirst(x->x>=d.t*24*3600, solution[i][sys.t])
+                err += (
+                    abs2.(lam_p[index] .- d.lam_p) + 
+                    abs2.(lam_n[index] .- d.lam_n) + 
+                    abs2.(lli[index] .- d.lli)
+                )
+                N_points += 1
             end
         end
         print("\e[A\e[2K")
-        @info "Optimizing... Loss: $err"
-        return err
+        @info "Optimizing... Loss: $(err/N_points)"
+        return err/N_points
     end
 
     @info "Initial cost: $(cost(sol_t))"

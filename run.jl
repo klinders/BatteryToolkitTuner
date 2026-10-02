@@ -178,9 +178,14 @@ for i in eachindex(sols)
         if d.t > t_end
             continue
         end
-        index = round(Int, d.t + 6)
-        err += abs2.(q[index] .- d.q./1000) + abs2.(lam_p[index] .- d.lam_p) + abs2.(lam_n[index] .- d.lam_n) + abs2.(lli[index] .- d.lli)
+        index = findfirst(x->x>=d.t*24*3600, sols[i][sys.t])
+        err += (
+            abs2.(lam_p[index] .- d.lam_p) + 
+            abs2.(lam_n[index] .- d.lam_n) + 
+            abs2.(lli[index] .- d.lli)
+        )
     end
+    err = err / length(real_data[i].t) # Average error over all data points
 end
 
 @info "Loss: $err"
