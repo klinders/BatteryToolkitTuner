@@ -8,6 +8,11 @@ make_plots = false
 
 temperatures = [10, 25, 40]
 socs = [[0,30], [70,85], [85,100]]
+real_temps = [
+    [17, 29, 42],
+    [16, 28, 41],
+    [15, 29, 40]
+]
 
 labels = ["T$(temp)SOC$(soc[1])-$(soc[2])" for temp in temperatures for soc in socs]
 
@@ -159,7 +164,17 @@ using Base.Threads
     
     for exp in eachindex(socs)
         data = CSV.read(joinpath(@__DIR__,"../data/Kirkaldy/Expt $(exp) - $(T)degC - Processed Data.csv"), DataFrame)
-        rename!(data, ["Days of degradation"=>:t,  "NE Capacity [mA h]"=>:q_n, "PE Capacity [mA h]"=>:q_p, "Cell Capacity [mA h]"=>:q])
+        rename!(data, [
+            "Days of degradation"=>:t,  
+            "NE Capacity [mA h]"=>:q_n, 
+            "PE Capacity [mA h]"=>:q_p, 
+            "Cell Capacity [mA h]"=>:q, 
+            "LAM PE"=>:lam_p,
+            "LAM NE_tot"=>:lam_n,
+            "LLI"=>:lli,
+            "SoH"=>:soc,
+            "0.1s Resistance [Ohms]"=>:r
+        ])
 
         push!(real_data, data)
     end
@@ -196,9 +211,9 @@ using Base.Threads
     end
 
     u0_arr = [
-        [sys.Iin=>-5, sys.Tin=>273.15+T, sys.soc_min=>0.0, sys.soc_max=>0.3],
-        [sys.Iin=>-5, sys.Tin=>273.15+T, sys.soc_min=>0.7, sys.soc_max=>0.85],
-        [sys.Iin=>-5, sys.Tin=>273.15+T, sys.soc_min=>0.85, sys.soc_max=>1.0],
+        [sys.Iin=>-5, sys.Tin=>273.15+real_temps[1][i_T], sys.soc_min=>0.0, sys.soc_max=>0.3],
+        [sys.Iin=>-5, sys.Tin=>273.15+real_temps[2][i_T], sys.soc_min=>0.7, sys.soc_max=>0.85],
+        [sys.Iin=>-5, sys.Tin=>273.15+real_temps[3][i_T], sys.soc_min=>0.85, sys.soc_max=>1.0],
     ]
 
     N = length(u0_arr)
@@ -234,8 +249,9 @@ using Base.Threads
     plot(sol_t, "not_optimized_$(T).png", title="No optimization at $(T)°C")
 
     get_q = getsym(sys, sys.cell.C_cell)
-    get_qn = getsym(sys, sys.cell.C_neg)
-    get_qp = getsym(sys, sys.cell.C_pos)
+    get_lam_p = getsym(sys, sys.cell.LAMₚ)
+    get_lam_n = getsym(sys, sys.cell.LAMₙ)
+    get_lli = getsym(sys, sys.cell.LLI)
 
     function cost(solution)
         err = 0.0
@@ -246,16 +262,17 @@ using Base.Threads
                 continue
             end
             q = get_q(solution[i])
-            q_n = get_qn(solution[i])
-            q_p = get_qp(solution[i])
-            
+            lam_p = get_lam_p(solution[i])
+            lam_n = get_lam_n(solution[i])
+            lli = get_lli(solution[i])
+
             for d in eachrow(real_data[i])
                 # 6 comes from the saves during the three events
                 if d.t > t_end
                     continue
                 end
                 index = round(Int, d.t + 6)
-                err += abs2.(q[index] .- d.q./1000) + abs2.(q_n[index] .- d.q_n./1000) + abs2.(q_p[index] .- d.q_p./1000)
+                err += abs2.(q[index] .- d.q./1000) + abs2.(lam_p[index] .- d.lam_p) + abs2.(lam_n[index] .- d.lam_n) + abs2.(lli[index] .- d.lli)
             end
         end
         print("\e[A\e[2K")
@@ -293,7 +310,7 @@ using Base.Threads
         @info "State:$state, Loss: $loss"
     end
     
-    result = solve(optprob, PSO(N=15, C1=2.0, C2=2.0, ω=0.8),  maxiters=100, use_initial=true)
+    result = solve(optprob, PSO(N=15, C1=2.0, C2=2.0, ω=0.8),  maxiters=50, use_initial=true)
 
     push!(results, result)
 

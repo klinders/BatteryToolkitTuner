@@ -130,8 +130,18 @@ function load_datasets()
     for T in [10, 25, 40]
         for exp in [1, 2, 3]
             data = CSV.read(joinpath(@__DIR__,"../data/Kirkaldy/Expt $(exp) - $(T)degC - Processed Data.csv"), DataFrame)
-            rename!(data, ["Days of degradation"=>:t,  "NE Capacity [mA h]"=>:q_n, "PE Capacity [mA h]"=>:q_p, "Cell Capacity [mA h]"=>:q])
-
+            rename!(data, [
+                "Days of degradation"=>:t,
+                "Charge Throughput [A h]"=>:q_ah,
+                "NE Capacity [mA h]"=>:q_n, 
+                "PE Capacity [mA h]"=>:q_p, 
+                "Cell Capacity [mA h]"=>:q, 
+                "LAM PE"=>:lam_p,
+                "LAM NE_tot"=>:lam_n,
+                "LLI"=>:lli,
+                "SoH"=>:soc,
+                "0.1s Resistance [Ohms]"=>:r
+            ])
             push!(real_data, data)
         end
     end

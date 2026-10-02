@@ -91,7 +91,7 @@ cases = [
     # [sys.Iin=>-4.89, sys.Tin=>273.15+45, sys.soc_min=>0.3, sys.soc_max=>0.3],
     # [sys.Iin=>-4.89, sys.Tin=>273.15+45, sys.soc_min=>0.5, sys.soc_max=>0.5],
     # [sys.Iin=>-4.89, sys.Tin=>273.15+45, sys.soc_min=>0.8, sys.soc_max=>0.8],
-    # Cycle T=10
+    # # Cycle T=10
     [sys.Iin=>-5, sys.Tin=>273.15+10, sys.soc_min=>0.0, sys.soc_max=>0.3],
     [sys.Iin=>-5, sys.Tin=>273.15+10, sys.soc_min=>0.7, sys.soc_max=>0.85],
     [sys.Iin=>-5, sys.Tin=>273.15+10, sys.soc_min=>0.85, sys.soc_max=>1],
@@ -101,7 +101,7 @@ cases = [
     # [sys.Iin=>-5, sys.Tin=>273.15+25, sys.soc_min=>0.7, sys.soc_max=>0.85],
     # [sys.Iin=>-5, sys.Tin=>273.15+25, sys.soc_min=>0.85, sys.soc_max=>1],
 
-    # Cycle 70-85%
+    # Cycle T=40
     # [sys.Iin=>-5, sys.Tin=>273.15+40, sys.soc_min=>0.0, sys.soc_max=>0.3],
     # [sys.Iin=>-5, sys.Tin=>273.15+40, sys.soc_min=>0.7, sys.soc_max=>0.85],
     # [sys.Iin=>-5, sys.Tin=>273.15+40, sys.soc_min=>0.85, sys.soc_max=>1],
@@ -156,8 +156,9 @@ sols = test_all_cases(sys, cases, QNDF(); parameters=parameters, period=(0, 24*3
 real_data = load_datasets()[[10,11,12,13,14,15,16,17,18]]
 
 get_q = getsym(sys, sys.cell.C_cell)
-get_qn = getsym(sys, sys.cell.C_neg)
-get_qp = getsym(sys, sys.cell.C_pos)
+get_lam_p = getsym(sys, sys.cell.LAMₚ)
+get_lam_n = getsym(sys, sys.cell.LAMₙ)
+get_lli = getsym(sys, sys.cell.LLI)
 
 err = 0.0
 
@@ -168,16 +169,17 @@ for i in eachindex(sols)
         continue
     end
     q = get_q(sols[i])
-    q_n = get_qn(sols[i])
-    q_p = get_qp(sols[i])
-    
+    lam_p = get_lam_p(sols[i])
+    lam_n = get_lam_n(sols[i])
+    lli = get_lli(sols[i])
+
     for d in eachrow(real_data[i])
         # 6 comes from the saves during the three events
         if d.t > t_end
             continue
         end
         index = round(Int, d.t + 6)
-        err += abs2.(q[index] .- d.q./1000) + abs2.(q_n[index] .- d.q_n./1000) + abs2.(q_p[index] .- d.q_p./1000)
+        err += abs2.(q[index] .- d.q./1000) + abs2.(lam_p[index] .- d.lam_p) + abs2.(lam_n[index] .- d.lam_n) + abs2.(lli[index] .- d.lli)
     end
 end
 
@@ -231,17 +233,17 @@ for (j, T) in enumerate([10])
         # lines!(ax, df.t/3600/24, (df.q_loss)/q_init*100, label="Total")
         scatter!(ax, real_data[k].t, (1 .- real_data[k].q/real_data[k].q[1])*100)
         xlims!(ax, (0, t_end))
-        ylims!(ax, (0,15) )
+        ylims!(ax, (0,15))
         
         ax2 = Axis(fig[2,i], xlabel="Time [days]", ylabel="Capacity [A.h]")
         lines!(ax2, sol[sys.t]/3600/24, sol[sys.cell.LAMₚ], label="LAMₚ", color=colors[1])
         lines!(ax2, sol[sys.t]/3600/24, sol[sys.cell.LAMₙ], label="LAMₙ", color=colors[2])
-        lines!(ax2, sol[sys.t]/3600/24, sol[sys.cell.Q_loss]/q_init*100, label="Total", color=colors[3])
-        scatter!(ax2, real_data[k].t, (1 .- real_data[k].q_p./real_data[k].q_p[1])*100, color=colors[1])
-        scatter!(ax2, real_data[k].t, (1 .- real_data[k].q_n./real_data[k].q_n[1])*100, color=colors[2])
-        scatter!(ax2, real_data[k].t, (1 .- real_data[k].q./real_data[k].q[1])*100, color=colors[3])
+        lines!(ax2, sol[sys.t]/3600/24, sol[sys.cell.LLI], label="LLI", color=colors[3])
+        scatter!(ax2, real_data[k].t, real_data[k].lam_p, color=colors[1])
+        scatter!(ax2, real_data[k].t, real_data[k].lam_n, color=colors[2])
+        scatter!(ax2, real_data[k].t, real_data[k].lli, color=colors[3])
         xlims!(ax2, (0, t_end))
-        ylims!(ax2, (0,15) )
+        ylims!(ax2, (0,0.2) )
         if i == 3
             axislegend(ax, position=:lt)
             axislegend(ax2, position=:lt)
